@@ -1,0 +1,17 @@
+{
+    "include": 
+    [
+        "src/**/*"
+    ],
+    "exclude": 
+    [
+        "node_modules"
+    ],
+    "compilerOptions": 
+    {
+        "module": "System",
+        "noImplicitAny": true,
+        "target": "ES2015",
+        "outFile": "app-next-core-modules.js"
+    }
+}

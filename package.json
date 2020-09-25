@@ -1,0 +1,27 @@
+{
+  "name": "app-next-core",
+  "version": "0.1.0",
+  "description": "Develop lightweight next generation apps with a powerful core, written in vanilla JS",
+  "main": "dist/app-next-core.js",
+  "devDependencies": {
+    "garden-loader": "1.0.7",
+    "gulp": "4.0.2",
+    "gulp-concat": "2.6.1",
+    "gulp-minify": "3.1.0",
+    "gulp-typescript": "6.0.0-alpha.1",
+    "typescript": "4.0.3"
+  },
+  "scripts": {
+    "build": "gulp build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appnextdev/app-next-core.git"
+  },
+  "author": "ymz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/appnextdev/app-next-core/issues"
+  },
+  "homepage": "https://github.com/appnextdev/app-next-core#readme"
+}
