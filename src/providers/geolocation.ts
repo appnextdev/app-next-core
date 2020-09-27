@@ -1,28 +1,17 @@
-import { AppNextPermissionProvider } from './permission'
 import { AppNextWatch } from '../handlers/watch'
 import { Errors, error } from '../handlers/error'
 
 export class AppNextGeoLocationProvider extends AppNextWatch<Position>
 {
-    constructor(options: PositionOptions)
+    constructor(options?: PositionOptions)
     {
-        super()
+        super('geolocation')
 
         this.options = options
-        this.permission = new AppNextPermissionProvider('geolocation')
-
-        this.permission.onCancel = error => this.invokeCancelEvent(error)
-        this.permission.onError = error => this.invokeErrorEvent(error)
-        this.permission.onPending = () => this.invokePendingEvent()
     }
 
+    private id: number
     private readonly options: PositionOptions
-    private readonly permission: AppNextPermissionProvider
-
-    public request() : Promise<void> 
-    {
-        return this.permission.register()
-    }
 
     public start() : void 
     {

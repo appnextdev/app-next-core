@@ -3,14 +3,14 @@ import { Errors, error } from '../handlers/error'
 
 export class AppNextPermissionProvider extends AppNextDataEvents<void>
 {
-    constructor(name: PermissionName)
+    constructor(permissions: Array<PermissionName> | PermissionName)
     {
         super()
 
-        this.name = name
+        this.permissions = Array.isArray(permissions) ? permissions : [ permissions ]
     }
 
-    private readonly name: PermissionName
+    private readonly permissions: Array<PermissionName>
 
     public register() : Promise<void>
     {
@@ -33,10 +33,15 @@ export class AppNextPermissionProvider extends AppNextDataEvents<void>
 
         const provider = this
 
-        return navigator.permissions.query({ name: this.name }).then(permission =>
+        const request = this.permissions.map(permission => navigator.permissions.query({ name: permission }))
+
+        return Promise.all(request).then(permissions =>
         {
-            handlePermission(permission)
-            permission.onchange = () => handlePermission(permission)
+            permissions.forEach(permission =>
+            {
+                handlePermission(permission)
+                permission.onchange = () => handlePermission(permission)
+            })
         })
     }
 }

@@ -2,9 +2,10 @@
 <html>
     <head>
         <title>AppNext Test Page</title>
-        <link rel="stylesheet" href="base.css" />
-        <script src="base.js"></script>
+        <link rel="stylesheet" href="base/style.css" />
+        <script src="base/utils.js"></script>
         <script src="../dist/app-next-core.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/pretty-print-json@0.2/dist/pretty-print-json.min.js"></script>
         <script>
             AppNext(ctx =>
             {
@@ -27,7 +28,7 @@
 
                 geoloc.onData = position => 
                 {
-                    console.info(position)
+                    output('position', position, true)
 
                     notify('geolocation-position', true)
                 }
@@ -72,5 +73,6 @@
         <label id="geolocation-position" class="test">Geolocation is sending position data</label>
         <label id="geolocation-cancel" class="test">Geolocation is stopped properly</label>
         <label id="geolocation-error" class="test">Error handled by geolocation provider</label>
+        <pre id="position" class="output"></pre>
     </body>
 </html>

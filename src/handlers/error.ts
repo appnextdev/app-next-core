@@ -3,6 +3,7 @@ export enum Errors
     acceptNotSupported,
     captureNotSupported,
     featureTerminated,
+    invalidFactoryFunction,
     permissionDenied
 }
 
@@ -11,6 +12,7 @@ const errors: Record<string, { name: string, message: string }> =
     acceptNotSupported: { name: 'accept not supported', message: 'Input element "accept" attribute is not supported by this device' },
     captureNotSupported: { name: 'capture not supported', message: 'Input element "capture" attribute is not supported by this device' },
     featureTerminated: { name: 'feature terminated', message: 'Current feature terminated due to user action' },
+    invalidFactoryFunction: { name: 'invalid factory', message: 'Factory function must provide a valid handler instance' },
     permissionDenied: { name: 'permission denied', message: 'Requested permission denied by user' }
 }
 

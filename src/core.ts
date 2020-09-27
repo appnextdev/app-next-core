@@ -1,9 +1,14 @@
 import { AppNextGeoLocationProvider } from './providers/geolocation'
-//import { AppNextMediaPicker } from './elements/media-picker'
+import { AppNextAccelerometer } from './sensors/accelerometer'
 
 interface AppNextCoreProviders
 {
-    geolocation: any
+    geolocation: (options?: PositionOptions) => AppNextGeoLocationProvider
+}
+
+interface AppNextCoreSensors
+{
+    accelerometer: (options?: AccelerometerSensorOptions) => AppNextAccelerometer
 }
 
 export function config(name: string)
@@ -19,11 +24,17 @@ export class AppNextCore
     {
         this.providers = 
         {
-            geolocation: (options: PositionOptions) => new AppNextGeoLocationProvider(options)
+            geolocation: (options?: PositionOptions) => new AppNextGeoLocationProvider(options)
+        }
+
+        this.sensors = 
+        {
+            accelerometer: (options?: AccelerometerSensorOptions) => new AppNextAccelerometer(options)
         }
     }
 
     public readonly providers: AppNextCoreProviders
+    public readonly sensors: AppNextCoreSensors
 
-    public config(value: any) { AppNextCore.config = value }
+    public config(value: any) { AppNextCore.config = value || {} }
 }

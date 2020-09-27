@@ -57,3 +57,24 @@ label.test.ko
     color: #fefefe;
     background: #dd1731;
 }
+
+pre.output
+{
+    background: #363639;
+    color: #fefeff;
+    font-size: 1.2em;
+    line-height: 1.3;
+    padding: 0.5em;
+    display: none
+}
+
+pre.show.output
+{
+    display: block;
+}
+
+.json-key     { color: #2aec91; }
+.json-string  { color: #e34cf1; }
+.json-number  { color: #5393f3; }
+.json-boolean { color: #21ade4; }
+.json-null    { color: #aaa; }

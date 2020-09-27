@@ -273,13 +273,15 @@ System.register("handlers/error", [], function (exports_2, context_2) {
                 Errors[Errors["acceptNotSupported"] = 0] = "acceptNotSupported";
                 Errors[Errors["captureNotSupported"] = 1] = "captureNotSupported";
                 Errors[Errors["featureTerminated"] = 2] = "featureTerminated";
-                Errors[Errors["permissionDenied"] = 3] = "permissionDenied";
+                Errors[Errors["invalidFactoryFunction"] = 3] = "invalidFactoryFunction";
+                Errors[Errors["permissionDenied"] = 4] = "permissionDenied";
             })(Errors || (Errors = {}));
             exports_2("Errors", Errors);
             errors = {
                 acceptNotSupported: { name: 'accept not supported', message: 'Input element "accept" attribute is not supported by this device' },
                 captureNotSupported: { name: 'capture not supported', message: 'Input element "capture" attribute is not supported by this device' },
                 featureTerminated: { name: 'feature terminated', message: 'Current feature terminated due to user action' },
+                invalidFactoryFunction: { name: 'invalid factory', message: 'Factory function must provide a valid handler instance' },
                 permissionDenied: { name: 'permission denied', message: 'Requested permission denied by user' }
             };
         }
@@ -300,9 +302,9 @@ System.register("providers/permission", ["handlers/data", "handlers/error"], fun
         ],
         execute: function () {
             AppNextPermissionProvider = class AppNextPermissionProvider extends data_1.AppNextDataEvents {
-                constructor(name) {
+                constructor(permissions) {
                     super();
-                    this.name = name;
+                    this.permissions = Array.isArray(permissions) ? permissions : [permissions];
                 }
                 register() {
                     function handlePermission(permission) {
@@ -318,9 +320,12 @@ System.register("providers/permission", ["handlers/data", "handlers/error"], fun
                         }
                     }
                     const provider = this;
-                    return navigator.permissions.query({ name: this.name }).then(permission => {
-                        handlePermission(permission);
-                        permission.onchange = () => handlePermission(permission);
+                    const request = this.permissions.map(permission => navigator.permissions.query({ name: permission }));
+                    return Promise.all(request).then(permissions => {
+                        permissions.forEach(permission => {
+                            handlePermission(permission);
+                            permission.onchange = () => handlePermission(permission);
+                        });
                     });
                 }
             };
@@ -328,32 +333,42 @@ System.register("providers/permission", ["handlers/data", "handlers/error"], fun
         }
     };
 });
-System.register("handlers/watch", ["handlers/data"], function (exports_4, context_4) {
+System.register("handlers/watch", ["handlers/data", "providers/permission"], function (exports_4, context_4) {
     "use strict";
-    var data_2, AppNextWatch;
+    var data_2, permission_1, AppNextWatch;
     var __moduleName = context_4 && context_4.id;
     return {
         setters: [
             function (data_2_1) {
                 data_2 = data_2_1;
+            },
+            function (permission_1_1) {
+                permission_1 = permission_1_1;
             }
         ],
         execute: function () {
             AppNextWatch = class AppNextWatch extends data_2.AppNextDataEvents {
+                constructor(permissions) {
+                    super();
+                    this.permission = new permission_1.AppNextPermissionProvider(permissions);
+                    this.permission.onCancel = error => this.invokeCancelEvent(error);
+                    this.permission.onError = error => this.invokeErrorEvent(error);
+                    this.permission.onPending = () => this.invokePendingEvent();
+                }
+                request() {
+                    return this.permission.register();
+                }
             };
             exports_4("AppNextWatch", AppNextWatch);
         }
     };
 });
-System.register("providers/geolocation", ["providers/permission", "handlers/watch", "handlers/error"], function (exports_5, context_5) {
+System.register("providers/geolocation", ["handlers/watch", "handlers/error"], function (exports_5, context_5) {
     "use strict";
-    var permission_1, watch_1, error_2, AppNextGeoLocationProvider;
+    var watch_1, error_2, AppNextGeoLocationProvider;
     var __moduleName = context_5 && context_5.id;
     return {
         setters: [
-            function (permission_1_1) {
-                permission_1 = permission_1_1;
-            },
             function (watch_1_1) {
                 watch_1 = watch_1_1;
             },
@@ -364,15 +379,8 @@ System.register("providers/geolocation", ["providers/permission", "handlers/watc
         execute: function () {
             AppNextGeoLocationProvider = class AppNextGeoLocationProvider extends watch_1.AppNextWatch {
                 constructor(options) {
-                    super();
+                    super('geolocation');
                     this.options = options;
-                    this.permission = new permission_1.AppNextPermissionProvider('geolocation');
-                    this.permission.onCancel = error => this.invokeCancelEvent(error);
-                    this.permission.onError = error => this.invokeErrorEvent(error);
-                    this.permission.onPending = () => this.invokePendingEvent();
-                }
-                request() {
-                    return this.permission.register();
                 }
                 start() {
                     var init = true;
@@ -408,18 +416,106 @@ System.register("providers/geolocation", ["providers/permission", "handlers/watc
         }
     };
 });
-System.register("core", ["providers/geolocation"], function (exports_6, context_6) {
+System.register("sensors/base", ["handlers/watch", "handlers/error"], function (exports_6, context_6) {
     "use strict";
-    var geolocation_1, AppNextCore;
+    var watch_2, error_3, AppNextSensor;
     var __moduleName = context_6 && context_6.id;
+    return {
+        setters: [
+            function (watch_2_1) {
+                watch_2 = watch_2_1;
+            },
+            function (error_3_1) {
+                error_3 = error_3_1;
+            }
+        ],
+        execute: function () {
+            AppNextSensor = class AppNextSensor extends watch_2.AppNextWatch {
+                constructor(factory, permissions) {
+                    super(permissions);
+                    this.factory = factory;
+                }
+                request() {
+                    if (!this.factory)
+                        return Promise.reject(error_3.error(error_3.Errors.invalidFactoryFunction));
+                    this.invokePendingEvent();
+                    return super.request().then(() => {
+                        try {
+                            this.handler = this.factory();
+                        }
+                        catch (error) {
+                            switch (error.name) {
+                                case 'SecurityError':
+                                case 'ReferenceError':
+                                    return this.invokeCancelEvent(error);
+                                default:
+                                    this.invokeErrorEvent(error);
+                            }
+                        }
+                    }).catch(error => this.invokeErrorEvent(error));
+                }
+                start() {
+                    if (!this.handler)
+                        return;
+                    this.handler.onerror = event => {
+                        switch (event.error.name) {
+                            case 'NotAllowedError':
+                            case 'NotReadableError':
+                                return this.invokeCancelEvent(event.error);
+                            default:
+                                return this.invokeErrorEvent(event.error);
+                        }
+                    };
+                    this.handler.onreading = () => this.invokeDataEvent(this.handler);
+                    this.handler.start();
+                    this.invokeReadyEvent();
+                }
+                stop() {
+                    if (this.handler) {
+                        this.handler.stop();
+                        this.invokeCancelEvent(error_3.error(error_3.Errors.featureTerminated));
+                    }
+                }
+            };
+            exports_6("AppNextSensor", AppNextSensor);
+        }
+    };
+});
+System.register("sensors/accelerometer", ["sensors/base"], function (exports_7, context_7) {
+    "use strict";
+    var base_1, AppNextAccelerometer;
+    var __moduleName = context_7 && context_7.id;
+    return {
+        setters: [
+            function (base_1_1) {
+                base_1 = base_1_1;
+            }
+        ],
+        execute: function () {
+            AppNextAccelerometer = class AppNextAccelerometer extends base_1.AppNextSensor {
+                constructor(options) {
+                    super(() => new Accelerometer(options), 'accelerometer');
+                }
+            };
+            exports_7("AppNextAccelerometer", AppNextAccelerometer);
+        }
+    };
+});
+System.register("core", ["providers/geolocation", "sensors/accelerometer"], function (exports_8, context_8) {
+    "use strict";
+    var geolocation_1, accelerometer_1, AppNextCore;
+    var __moduleName = context_8 && context_8.id;
     function config(name) {
         return (AppNextCore.config || {})[name] || {};
     }
-    exports_6("config", config);
+    exports_8("config", config);
     return {
         setters: [
             function (geolocation_1_1) {
                 geolocation_1 = geolocation_1_1;
+            },
+            function (accelerometer_1_1) {
+                accelerometer_1 = accelerometer_1_1;
             }
         ],
         execute: function () {
@@ -429,17 +525,21 @@ System.register("core", ["providers/geolocation"], function (exports_6, context_
                         {
                             geolocation: (options) => new geolocation_1.AppNextGeoLocationProvider(options)
                         };
+                    this.sensors =
+                        {
+                            accelerometer: (options) => new accelerometer_1.AppNextAccelerometer(options)
+                        };
                 }
-                config(value) { AppNextCore.config = value; }
+                config(value) { AppNextCore.config = value || {}; }
             };
-            exports_6("AppNextCore", AppNextCore);
+            exports_8("AppNextCore", AppNextCore);
         }
     };
 });
-System.register("elements/base", ["core", "handlers/data"], function (exports_7, context_7) {
+System.register("elements/base", ["core", "handlers/data"], function (exports_9, context_9) {
     "use strict";
     var core_1, data_3, AppNextCustomElementUtils, AppNextCustomElement;
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_9 && context_9.id;
     return {
         setters: [
             function (core_1_1) {
@@ -487,25 +587,25 @@ System.register("elements/base", ["core", "handlers/data"], function (exports_7,
                     this.utils = new AppNextCustomElementUtils(this);
                 }
             };
-            exports_7("AppNextCustomElement", AppNextCustomElement);
+            exports_9("AppNextCustomElement", AppNextCustomElement);
         }
     };
 });
-System.register("elements/media-picker", ["elements/base", "handlers/error"], function (exports_8, context_8) {
+System.register("elements/media-picker", ["elements/base", "handlers/error"], function (exports_10, context_10) {
     "use strict";
-    var base_1, error_3, AppNextMediaPicker;
-    var __moduleName = context_8 && context_8.id;
+    var base_2, error_4, AppNextMediaPicker;
+    var __moduleName = context_10 && context_10.id;
     return {
         setters: [
-            function (base_1_1) {
-                base_1 = base_1_1;
+            function (base_2_1) {
+                base_2 = base_2_1;
             },
-            function (error_3_1) {
-                error_3 = error_3_1;
+            function (error_4_1) {
+                error_4 = error_4_1;
             }
         ],
         execute: function () {
-            AppNextMediaPicker = class AppNextMediaPicker extends base_1.AppNextCustomElement {
+            AppNextMediaPicker = class AppNextMediaPicker extends base_2.AppNextCustomElement {
                 render() {
                     this.utils.reset();
                     const target = 'input', config = this.utils.config(), element = this.utils.element(target), type = this.utils.attribute('type'), single = this.utils.attribute('single'), source = this.utils.attribute('source');
@@ -519,7 +619,7 @@ System.register("elements/media-picker", ["elements/base", "handlers/error"], fu
                                 element.capture = source == 'auto' ? '' : source;
                             }
                             else {
-                                this.events.invokeCancelEvent(error_3.error(error_3.Errors.captureNotSupported));
+                                this.events.invokeCancelEvent(error_4.error(error_4.Errors.captureNotSupported));
                             }
                         }
                         if (type) {
@@ -527,7 +627,7 @@ System.register("elements/media-picker", ["elements/base", "handlers/error"], fu
                                 element.accept = type + '/*';
                             }
                             else {
-                                this.events.invokeCancelEvent(error_3.error(error_3.Errors.acceptNotSupported));
+                                this.events.invokeCancelEvent(error_4.error(error_4.Errors.acceptNotSupported));
                             }
                         }
                         element.multiple = single == null || single == undefined || single != '';
@@ -540,14 +640,14 @@ System.register("elements/media-picker", ["elements/base", "handlers/error"], fu
                     }
                 }
             };
-            exports_8("AppNextMediaPicker", AppNextMediaPicker);
+            exports_10("AppNextMediaPicker", AppNextMediaPicker);
         }
     };
 });
-System.register("setup", ["elements/media-picker"], function (exports_9, context_9) {
+System.register("setup", ["elements/media-picker"], function (exports_11, context_11) {
     "use strict";
     var media_picker_1, AppNextCustomElementsRegistry, AppNextRenderer, AppNextSetup;
-    var __moduleName = context_9 && context_9.id;
+    var __moduleName = context_11 && context_11.id;
     return {
         setters: [
             function (media_picker_1_1) {
@@ -590,7 +690,7 @@ System.register("setup", ["elements/media-picker"], function (exports_9, context
                     this.renderer.render(elements);
                 }
             };
-            exports_9("AppNextSetup", AppNextSetup);
+            exports_11("AppNextSetup", AppNextSetup);
         }
     };
 });

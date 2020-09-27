@@ -29,9 +29,20 @@ interface SensorOptions
     frequency?: number
 }
 
+declare enum AccelerometerLocalCoordinateSystem 
+{ 
+    device, 
+    screen
+}
+
+declare interface AccelerometerSensorOptions extends SensorOptions 
+{
+    referenceFrame: AccelerometerLocalCoordinateSystem
+}
+
 declare class Accelerometer extends Sensor 
 {
-  constructor(options?: SensorOptions)
+  constructor(options?: AccelerometerSensorOptions)
   readonly x?: number
   readonly y?: number
   readonly z?: number
