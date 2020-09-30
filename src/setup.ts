@@ -1,3 +1,4 @@
+import { AppNextFileSaver } from './elements/file-saver'
 import { AppNextMediaPicker } from './elements/media-picker'
 
 class AppNextCustomElementsRegistry
@@ -6,6 +7,7 @@ class AppNextCustomElementsRegistry
     {
         this.registry = {}
 
+        this.register('file-saver', AppNextFileSaver)
         this.register('media-picker', AppNextMediaPicker)
     }
 

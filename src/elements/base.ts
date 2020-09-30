@@ -46,6 +46,8 @@ class AppNextCustomElementUtils
         {
             const handler = document.createElement(element) as any
 
+            if (name in handler) return true
+
             handler.setAttribute(name, true)
 
             return !!handler[name]

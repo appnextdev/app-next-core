@@ -13,7 +13,9 @@ interface AppNextCoreSensors
 
 export function config(name: string)
 {
-    return (AppNextCore.config || {})[name] || {}
+    const object = (AppNextCore.config || {})[name] || {}
+
+    object.name = name; return object
 }
 
 export class AppNextCore
