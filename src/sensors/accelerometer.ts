@@ -1,4 +1,4 @@
-import { AppNextSensor } from './base'
+import { AppNextSensor } from './base/sensor'
 
 export class AppNextAccelerometer extends AppNextSensor<Accelerometer>
 {

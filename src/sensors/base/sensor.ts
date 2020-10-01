@@ -1,5 +1,5 @@
-import { AppNextWatch } from '../handlers/watch'
-import { Errors, error } from '../handlers/error'
+import { AppNextWatch } from '../../handlers/watch'
+import { Errors, error } from '../../handlers/error'
 
 export abstract class AppNextSensor<T extends Sensor> extends AppNextWatch<T>
 {

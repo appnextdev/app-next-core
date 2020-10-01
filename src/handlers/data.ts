@@ -1,3 +1,12 @@
+export interface AppNextDataEventsListeners<T>
+{
+    oncancel?(error: Error) : void
+    ondata?(data: T) : void
+    onerror(error: Error) : void
+    onpending?() : void
+    onready() : void
+}
+
 export class AppNextDataEvents<T>
 {
     private cancel: (error: Error) => void

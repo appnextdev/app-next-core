@@ -1,7 +1,6 @@
-import { config } from '../core'
-import { AppNextDataEvents } from '../handlers/data'
+import { config } from '../../core'
 
-class AppNextCustomElementUtils
+export class AppNextCustomElementUtils
 {
     constructor(container: HTMLElement)
     {
@@ -53,20 +52,4 @@ class AppNextCustomElementUtils
             return !!handler[name]
         }
     }
-}
-
-export abstract class AppNextCustomElement<T> extends HTMLElement
-{
-    constructor()
-    {
-        super()
-
-        this.events = new AppNextDataEvents<T>()
-        this.utils = new AppNextCustomElementUtils(this)
-    }
-
-    protected readonly events: AppNextDataEvents<T>
-    protected readonly utils: AppNextCustomElementUtils
-
-    public abstract render() : void
 }

@@ -1,4 +1,4 @@
-import { AppNextCustomElement } from './base'
+import { AppNextCustomElement } from './base/element'
 import { error, Errors } from '../handlers/error'
 
 interface AppNextFileSaverData
