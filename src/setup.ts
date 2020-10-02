@@ -2,6 +2,8 @@ import { AppNextBackgroundService } from './handlers/background'
 import { AppNextFileSaver } from './elements/file-saver'
 import { AppNextMediaPicker } from './elements/media-picker'
 import { AppNextCustomElement } from './elements/base/element'
+import { AppNextScheduler } from './handlers/scheduler'
+import { AppNextReflector, AppNextReflectEvents } from './handlers/reflector'
 
 abstract class AppNextSetupRegistry<T>
 {
@@ -93,11 +95,28 @@ export class AppNextSetup
     private readonly renderer: AppNextRenderer
     private readonly services: AppNextServicesRegistry
 
+    private scheduler: AppNextScheduler
+
     public register = 
     {
         element: (name: string, ctor: Function) : Function =>
         {
             return this.elements.register(name, ctor)
+        },
+
+        reflector: (events: AppNextReflectEvents) : AppNextReflector =>
+        {
+            return new AppNextReflector(events)
+        },
+
+        scheduler: (seconds?: number) : AppNextScheduler =>
+        {
+            if (!this.scheduler)
+            {
+                this.scheduler = new AppNextScheduler(seconds)
+            }
+
+            return this.scheduler
         },
 
         service: (name: string, script: string) : AppNextBackgroundService =>

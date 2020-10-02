@@ -6,6 +6,7 @@ export enum Errors
     featureTerminated,
     invalidConfig,
     invalidFactoryFunction,
+    notificationError,
     permissionDenied
 }
 
@@ -17,6 +18,7 @@ const errors: Record<string, { name: string, message: string }> =
     featureTerminated: { name: 'feature terminated', message: 'Current feature terminated due to user action' },
     invalidConfig: {name: 'invalid config', message: 'Config object is missing required members' }, 
     invalidFactoryFunction: { name: 'invalid factory', message: 'Factory function must provide a valid handler instance' },
+    notificationError: { name: 'notification error', message: 'An error raised while handling notification' },
     permissionDenied: { name: 'permission denied', message: 'Requested permission denied by user' }
 }
 

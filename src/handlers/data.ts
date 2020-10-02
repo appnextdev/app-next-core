@@ -1,14 +1,27 @@
 export interface AppNextDataEventsListeners<T>
 {
-    oncancel?(error: Error) : void
-    ondata?(data: T) : void
-    onerror(error: Error) : void
-    onpending?() : void
-    onready() : void
+    onCancel?(error: Error) : void
+    onData?(data: T) : void
+    onError(error: Error) : void
+    onPending?() : void
+    onReady() : void
 }
 
 export class AppNextDataEvents<T>
 {
+    public static from<T>(listeners: AppNextDataEventsListeners<T>) : AppNextDataEvents<T>
+    {
+        const handler = new AppNextDataEvents<T>()
+
+        handler.onCancel = listeners.onCancel
+        handler.onData = listeners.onData
+        handler.onError = listeners.onError
+        handler.onPending = listeners.onPending
+        handler.onReady = listeners.onReady
+
+        return handler
+    }
+
     private cancel: (error: Error) => void
     private data: (data: T) => void
     private error: (error: Error) => void

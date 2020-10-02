@@ -22,7 +22,7 @@ export class AppNextPermissionProvider extends AppNextDataEvents<void>
                 {
                     case 'granted': return provider.invokeReadyEvent()
                     case 'prompt': return provider.invokePendingEvent()
-                    case 'denied': return provider.invokeCancelEvent(error(Errors.permissionDenied))
+                    case 'denied': default: return provider.invokeCancelEvent(error(Errors.permissionDenied))
                 }
             }
             catch (error)

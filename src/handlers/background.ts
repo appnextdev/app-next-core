@@ -30,7 +30,7 @@ export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> im
         }
     }
 
-    public send(data: any) : void
+    public post(data: any) : void
     {
         this.worker.postMessage(data)
     }
@@ -65,7 +65,7 @@ export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> im
     {
         try
         {
-            if (arguments.length == 1) this.send(data)
+            if (arguments.length == 1) this.post(data)
 
             setTimeout(() => 
             {

@@ -1,9 +1,11 @@
 import { AppNextGeoLocationProvider } from './providers/geolocation'
 import { AppNextAccelerometer } from './sensors/accelerometer'
+import { AppNextNotificationsProvider } from './providers/notifications'
 
 interface AppNextCoreProviders
 {
     geolocation: (options?: PositionOptions) => AppNextGeoLocationProvider
+    notifications: () => AppNextNotificationsProvider
 }
 
 interface AppNextCoreSensors
@@ -26,7 +28,8 @@ export class AppNextCore
     {
         this.providers = 
         {
-            geolocation: (options?: PositionOptions) => new AppNextGeoLocationProvider(options)
+            geolocation: (options?: PositionOptions) => new AppNextGeoLocationProvider(options),
+            notifications: () => new AppNextNotificationsProvider()
         }
 
         this.sensors = 
