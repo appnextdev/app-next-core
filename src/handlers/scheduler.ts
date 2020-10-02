@@ -61,8 +61,9 @@ export class AppNextScheduler extends AppNextBackgroundService
                         error.name = 'invalid task'; handleError(error)
                     }
 
-                    task.when.setSeconds(0); task.when.setMilliseconds(0)
-                    task.when = task.when.getTime(); tasks.push(task)
+                    task.when.setMilliseconds(0)
+                    task.when = task.when.getTime()
+                    tasks.push(task)
                 }
                 catch(error)
                 {
