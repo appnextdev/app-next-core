@@ -13,46 +13,53 @@ export class AppNextGeoLocationProvider extends AppNextWatch<Position>
     private id: number
     private readonly options: PositionOptions
 
-    public start() : void 
+    public start() : Promise<void> 
     {
-        var init = true
-
-        this.id = navigator.geolocation.watchPosition(position =>
+        return new Promise((resolve, reject) =>
         {
-            if (init)
-            {
-                init = false; this.invokeReadyEvent()
-            }
+            var init = true
 
-            this.invokeDataEvent(position)
+            this.id = navigator.geolocation.watchPosition(position =>
+            {
+                if (init)
+                {
+                    init = false; this.invokeReadyEvent()
+                }
+    
+                this.invokeDataEvent(position); resolve()
+    
+            }, error =>
+            {
+                if (init)
+                {
+                    this.invokeCancelEvent(new Error(error.message))
+                }
+                else
+                {
+                    this.invokeErrorEvent(new Error(error.message))
+                }
 
-        }, error =>
-        {
-            if (init)
-            {
-                this.invokeCancelEvent(new Error(error.message))
-            }
-            else
-            {
-                this.invokeErrorEvent(new Error(error.message))
-            }
-            
-        }, this.options || {})
+                reject()
+                
+            }, this.options || {})
+        })
     }
 
-    public stop() : void 
+    public stop() : boolean 
     {
+        if (!this.id) return false
+
         try
         {
-            if (!this.id) return
-            
             navigator.geolocation.clearWatch(this.id); this.id = null
 
             this.invokeCancelEvent(error(Errors.featureTerminated))
+
+            return true
         }
         catch (error)
         {
-            this.invokeErrorEvent(error)
+            this.invokeErrorEvent(error); return false
         }
     }
 }

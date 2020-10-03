@@ -20,12 +20,16 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
             {
                 case 'notification':
 
-                    const registry = this.registry[message.data]; if (!registry) return
+                    const id = message.data, 
+                          registry = this.registry[id]
+                    
+                    if (!id || !registry) return
                     
                     switch(message.event)
                     {
                         case 'click':
                             registry.events.invokeDataEvent(registry.notification)
+                            this.query(id).catch(() => registry.events.invokeCancelEvent(error(Errors.featureTerminated)))
                             break
                     }
             }
@@ -58,7 +62,7 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
         if (!this.active || !this.registration) return
 
         const events = AppNextDataEvents.from(listeners),
-              id = new Date().getTime().toString(36)
+              id = 'app-next-' + new Date().getTime().toString(36)
 
         events.invokePendingEvent()
 
@@ -84,7 +88,7 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
                 {
                     if (this.registration)
                     {
-                        clearInterval(id)
+                        clearInterval(id); this.active = true
 
                         this.permission.handle(permission)
                         
@@ -97,31 +101,31 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
         })
     }
 
-    public start() : void
+    public start() : Promise<void>
     {
-        if (this.active) return
+        if (this.active) return Promise.reject()
 
-        const handleError = (error: Error) : void =>
+        const handleError = (error: Error) : Promise<void> =>
         {
             this.active = false
             this.invokeErrorEvent(error)
+
+            return Promise.reject()
         }
-        
-        this.active = true
 
         try
         {
-            this.request().then(() => {}).catch(error => handleError(error))
+            return this.request().catch(error => handleError(error))
         }
         catch(error)
         {
-            handleError(error)
+            return handleError(error)
         }
     }
 
-    public stop() : void
+    public stop() : boolean
     {
-        if (!this.active) return
+        if (!this.active) return false
 
         this.active = false
 
@@ -151,10 +155,12 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
             }
 
             this.invokeCancelEvent(error(Errors.featureTerminated))
+
+            return true
         }
         catch(error)
         {
-            this.invokeErrorEvent(error)
+            this.invokeErrorEvent(error); return false
         }
     }
 }

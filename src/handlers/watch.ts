@@ -29,6 +29,6 @@ export abstract class AppNextWatch<T> extends AppNextDataEvents<T> implements Ap
         return this.permission.register()
     }
 
-    public abstract start() : void
-    public abstract stop() : void
+    public abstract start() : boolean | Promise<void>
+    public abstract stop() : boolean | Promise<void>
 }

@@ -40,7 +40,7 @@ export abstract class AppNextSensor<T extends Sensor> extends AppNextWatch<T>
         }).catch(error => this.invokeErrorEvent(error))
     }
 
-    public start() : void
+    public start() : Promise<void>
     {
         const invoke = () =>
         {
@@ -50,11 +50,11 @@ export abstract class AppNextSensor<T extends Sensor> extends AppNextWatch<T>
 
         if (this.handler)
         {
-            invoke()
+            invoke(); return Promise.resolve()
         }
         else
         {
-            this.request().then(() =>  
+            return this.request().then(() =>  
             {
                 this.handler.onerror = event =>
                 {
@@ -73,15 +73,24 @@ export abstract class AppNextSensor<T extends Sensor> extends AppNextWatch<T>
 
                 invoke()
     
-            }).catch(error => this.invokeErrorEvent(error))
+            }).catch(error => 
+            {
+                this.invokeErrorEvent(error)
+            })
         }
     }
 
-    public stop()
+    public stop() : boolean
     {
         if (this.handler) 
         {
-            this.handler.stop(); this.invokeCancelEvent(error(Errors.featureTerminated))
+            this.handler.stop()
+            
+            this.invokeCancelEvent(error(Errors.featureTerminated))
+
+            return true
         }
+
+        return false
     }
 }

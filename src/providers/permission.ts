@@ -31,25 +31,6 @@ export class AppNextPermissionProvider extends AppNextDataEvents<void>
 
     public register() : Promise<void>
     {
-        /*function handlePermission(permission: PermissionStatus)
-        {
-            try
-            {
-                switch (permission.state)
-                {
-                    case 'granted': return provider.invokeReadyEvent()
-                    case 'prompt': return provider.invokePendingEvent()
-                    case 'denied': default: return provider.invokeCancelEvent(error(Errors.permissionDenied))
-                }
-            }
-            catch (error)
-            {
-                provider.invokeErrorEvent(error)
-            }
-        }
-
-        const provider = this*/
-
         const request = this.permissions.map(permission => navigator.permissions.query({ name: permission }))
 
         return Promise.all(request).then(permissions =>
@@ -58,8 +39,6 @@ export class AppNextPermissionProvider extends AppNextDataEvents<void>
             {
                 this.handle(permission.state)
                 permission.onchange = () => this.handle(permission.state)
-                //handlePermission(permission)
-                //permission.onchange = () => handlePermission(permission)
             })
         })
     }
