@@ -12,20 +12,20 @@ export class AppNextPermissionProvider extends AppNextDataEvents<void>
 
     private readonly permissions: Array<PermissionName>
 
-    public handle(permission: PermissionState | NotificationPermission | PushPermissionState)
+    public handle(permission: PermissionState | NotificationPermission | PushPermissionState) : boolean
     {
         try
         {
             switch (permission)
             {
-                case 'granted': return this.invokeReadyEvent()
-                case 'prompt': return this.invokePendingEvent()
-                case 'denied': default: return this.invokeCancelEvent(error(Errors.permissionDenied))
+                case 'granted': this.invokeReadyEvent(); return true
+                case 'prompt': this.invokePendingEvent(); return false
+                case 'denied': default: this.invokeCancelEvent(error(Errors.permissionDenied)); return false
             }
         }
         catch (error)
         {
-            this.invokeErrorEvent(error)
+            this.invokeErrorEvent(error); return false
         }
     }
 
