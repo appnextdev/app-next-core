@@ -22,11 +22,18 @@ export class AppNextDataEvents<T>
         return handler
     }
 
+    constructor()
+    {
+        this.waiting = false
+    }
+
     private cancel: (error: Error) => void
     private data: (data: T) => void
     private error: (error: Error) => void
     private pending: () => void
     private ready: () => void
+
+    private waiting: boolean
 
     public set onCancel(listener: (error: Error) => void) { this.cancel = listener }
     public set onData(listener: (data: T) => void) { this.data = listener }
@@ -67,6 +74,8 @@ export class AppNextDataEvents<T>
     {
         try
         {
+            this.waiting = true
+
             if (this.pending) this.pending()
         }
         catch (error)
@@ -79,6 +88,8 @@ export class AppNextDataEvents<T>
     {
         try
         {
+            if (!this.waiting) this.invokePendingEvent()
+            
             if (this.ready) this.ready()
         }
         catch (error)

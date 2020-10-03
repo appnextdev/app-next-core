@@ -14,24 +14,12 @@ export abstract class AppNextWatch<T> extends AppNextDataEvents<T> implements Ap
     {
         super()
 
-        const invokePending = () => 
-        {
-            loading = false; this.invokePendingEvent()
-        }
-
-        var loading = true
-        
         this.permission = new AppNextPermissionProvider(permissions)
 
         this.permission.onCancel = error => this.invokeCancelEvent(error)
         this.permission.onError = error => this.invokeErrorEvent(error)
-        this.permission.onPending = invokePending
-        this.permission.onReady = () =>
-        {
-            if (loading) invokePending()
-
-            this.invokeReadyEvent()
-        }
+        this.permission.onPending = () => this.invokePendingEvent()
+        this.permission.onReady = () => this.invokeReadyEvent()
     }
 
     protected readonly permission: AppNextPermissionProvider

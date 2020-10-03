@@ -1,6 +1,7 @@
 import { AppNextGeoLocationProvider } from './providers/geolocation'
 import { AppNextAccelerometer } from './sensors/accelerometer'
 import { AppNextNotificationsProvider } from './providers/notifications'
+import { AppNextServiceWorker } from './handlers/worker'
 
 interface AppNextCoreProviders
 {
@@ -26,17 +27,23 @@ export class AppNextCore
 
     constructor()
     {
+        this.worker = new AppNextServiceWorker()
+
         this.providers = 
         {
             geolocation: (options?: PositionOptions) => new AppNextGeoLocationProvider(options),
-            notifications: () => new AppNextNotificationsProvider()
+            notifications: () => new AppNextNotificationsProvider(this.worker)
         }
 
         this.sensors = 
         {
             accelerometer: (options?: AccelerometerSensorOptions) => new AppNextAccelerometer(options)
         }
+
+        this.worker.apply()
     }
+
+    private worker: AppNextServiceWorker
 
     public readonly providers: AppNextCoreProviders
     public readonly sensors: AppNextCoreSensors

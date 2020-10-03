@@ -42,24 +42,39 @@ export abstract class AppNextSensor<T extends Sensor> extends AppNextWatch<T>
 
     public start() : void
     {
-        if (!this.handler) return
-
-        this.handler.onerror = event =>
+        const invoke = () =>
         {
-            switch (event.error.name)
-            {
-                case 'NotAllowedError':
-                case 'NotReadableError': 
-                    return this.invokeCancelEvent(event.error)
-
-                default: 
-                    return this.invokeErrorEvent(event.error)
-            }
+            this.handler.start()
+            this.invokeReadyEvent()
         }
 
-        this.handler.onreading = () => this.invokeDataEvent(this.handler)
+        if (this.handler)
+        {
+            invoke()
+        }
+        else
+        {
+            this.request().then(() =>  
+            {
+                this.handler.onerror = event =>
+                {
+                    switch (event.error.name)
+                    {
+                        case 'NotAllowedError':
+                        case 'NotReadableError': 
+                            return this.invokeCancelEvent(event.error)
 
-        this.handler.start(); this.invokeReadyEvent()
+                        default: 
+                            return this.invokeErrorEvent(event.error)
+                    }
+                }
+
+                this.handler.onreading = () => this.invokeDataEvent(this.handler)
+
+                invoke()
+    
+            }).catch(error => this.invokeErrorEvent(error))
+        }
     }
 
     public stop()
