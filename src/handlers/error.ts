@@ -7,6 +7,7 @@ export enum Errors
     invalidConfig,
     invalidFactoryFunction,
     notificationError,
+    notificationNotFound,
     permissionDenied
 }
 
@@ -19,6 +20,7 @@ const errors: Record<string, { name: string, message: string }> =
     invalidConfig: {name: 'invalid config', message: 'Config object is missing required members' }, 
     invalidFactoryFunction: { name: 'invalid factory', message: 'Factory function must provide a valid handler instance' },
     notificationError: { name: 'notification error', message: 'An error raised while handling notification' },
+    notificationNotFound: { name: 'notification not found', message: 'Notification not found in service worker registration' },
     permissionDenied: { name: 'permission denied', message: 'Requested permission denied by user' }
 }
 

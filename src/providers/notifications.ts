@@ -86,21 +86,19 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
 
         events.invokePendingEvent()
 
-        const error = this.worker.invoke(registration =>
+        this.worker.invoke(registration =>
         {
             registration.showNotification(title, Object.assign(options, { tag: id }))
+                        .then(() => this.query(id))
+                        .then(notification =>
+                        {
+                            this.registry[id] = { events, notification }
+
+                            this.invokeDataEvent(notification)
+                            events.invokeReadyEvent()
+
+                        }).catch((error) => events.invokeCancelEvent(error))
         })
-
-        if (error) return this.invokeCancelEvent(error)
-
-        this.query(id).then(notification =>
-        {
-            this.registry[id] = { events, notification }
-
-            this.invokeDataEvent(notification)
-            events.invokeReadyEvent()
-
-        }).catch((error) => events.invokeCancelEvent(error))
     }
 
     public request() : Promise<void>
