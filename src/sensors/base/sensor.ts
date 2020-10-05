@@ -56,6 +56,8 @@ export abstract class AppNextSensor<T extends Sensor> extends AppNextWatch<T>
         {
             return this.request().then(() =>  
             {
+                if (!this.handler) return 
+
                 this.handler.onerror = event =>
                 {
                     switch (event.error.name)

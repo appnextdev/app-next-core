@@ -5,7 +5,7 @@ export interface AppNextReflectEvents
     onMemberUpdate(object: any, member: string, value: any) : void
 }
 
-export class AppNextReflector
+export class AppNextReflector implements Cycleable
 {
     constructor(events: AppNextReflectEvents)
     {
@@ -68,13 +68,13 @@ export class AppNextReflector
         }) : null
     }
 
-    public start() : void
+    public start() : boolean
     {
-        this.active = true
+        return this.active = true
     }
 
-    public stop() : void
+    public stop() : boolean
     {
-        this.active = false
+        return this.active = false
     }
 }

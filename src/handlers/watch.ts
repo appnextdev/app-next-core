@@ -8,7 +8,7 @@ export interface AppNextWatcher
     stop(options?: any) : void
 }
 
-export abstract class AppNextWatch<T> extends AppNextDataEvents<T> implements AppNextWatcher
+export abstract class AppNextWatch<T> extends AppNextDataEvents<T> implements AppNextWatcher, Cycleable
 {
     constructor(permissions: Array<PermissionName> | PermissionName)
     {

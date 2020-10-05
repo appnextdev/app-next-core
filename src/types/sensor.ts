@@ -48,6 +48,12 @@ declare class Accelerometer extends Sensor
   readonly z?: number
 }
 
+declare class AmbientLightSensor extends Sensor 
+{
+    constructor(sensorOptions?: SensorOptions)
+    readonly illuminance?: number
+}
+
 declare class LinearAccelerationSensor extends Accelerometer 
 {
     constructor(options?: SensorOptions)

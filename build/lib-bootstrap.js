@@ -1,10 +1,18 @@
-this.AppNext = function(invoke)
+this.AppNext = function(events)
 {
     const imports = ['core', 'setup'].map(name => System.import(name))
 
     Promise.all(imports).then(modules =>
     {
-        const core = new modules[0].AppNextCore(),
+        if (events instanceof Function)
+        {
+            events = 
+            {
+                onData: events
+            }
+        }
+
+        const core = new modules[0].AppNextCore(events),
               setup = new modules[1].AppNextSetup()
 
         core.elements = setup.elements
@@ -15,6 +23,6 @@ this.AppNext = function(invoke)
 
         core.render = elements => setup.render(elements)
 
-        invoke(core)
+        core.start().then(() => {})
     })
 }

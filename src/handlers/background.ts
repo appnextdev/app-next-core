@@ -2,7 +2,7 @@ import { AppNextDataEvents } from './data'
 import { error, Errors } from './error'
 import { AppNextWatcher } from './watch'
 
-export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> implements AppNextWatcher
+export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> implements AppNextWatcher, Cycleable
 {
     constructor(script: string)
     {
@@ -35,51 +35,66 @@ export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> im
         this.worker.postMessage(data)
     }
 
-    public start() : void
+    public start() : boolean
     {
         if (!this.worker)
         {
             this.request()
 
-            if (!this.worker) return
+            if (!this.worker) return false
         }
 
-        this.worker.onerror = event => this.invokeErrorEvent(event.error)
-
-        this.worker.onmessage = event =>
-        {
-            try
-            {
-                this.invokeDataEvent(event)
-            }
-            catch(error)
-            {
-                this.invokeErrorEvent(error)
-            }
-        }
-
-        this.invokeReadyEvent()
-    }
-
-    public stop(data?: any) : void
-    {
         try
         {
-            if (arguments.length == 1) this.post(data)
+            this.worker.onerror = event => this.invokeErrorEvent(event.error)
 
-            setTimeout(() => 
+            this.worker.onmessage = event =>
             {
-                this.worker.terminate()
-                this.worker.onerror = this.worker.onmessage = null
-            
-                this.invokeCancelEvent(error(Errors.featureTerminated))
-
-            }, 10) 
+                try
+                {
+                    this.invokeDataEvent(event)
+                }
+                catch(error)
+                {
+                    this.invokeErrorEvent(error)
+                }
+            }
+    
+            this.invokeReadyEvent(); return true
         }
         catch(error)
         {
-            this.invokeErrorEvent(error)
+            this.invokeCancelEvent(error)
+
+            return false
         }
+    }
+
+    public stop(data?: any) : Promise<void>
+    {
+        return new Promise((resolve, reject) =>
+        {
+            try
+            {
+                if (arguments.length == 1) this.post(data)
+    
+                setTimeout(() => 
+                {
+                    this.worker.terminate()
+                    this.worker.onerror = this.worker.onmessage = null
+                
+                    this.invokeCancelEvent(error(Errors.featureTerminated))
+    
+                    resolve()
+    
+                }, 10) 
+            }
+            catch(error)
+            {
+                this.invokeErrorEvent(error); reject()
+            }
+        })
+        
     }
 
     

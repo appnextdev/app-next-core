@@ -3,6 +3,12 @@ import { Errors, error } from '../handlers/error'
 import { AppNextDataEvents, AppNextDataEventsListeners } from '../handlers/data'
 import { AppNextServiceWorker } from '../handlers/worker'
 
+interface AppNextNotificationEvent
+{
+    action: string
+    id: string
+}
+
 export class AppNextNotificationsProvider extends AppNextWatch<Notification>
 {
     constructor(worker: AppNextServiceWorker)
@@ -20,53 +26,72 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
             {
                 case 'notification':
 
-                    const id = message.data, 
-                          registry = this.registry[id]
+                    const event = message.event as AppNextNotificationEvent
+
+                    if (!event) return
+
+                    const registry = this.registry[event.id]
                     
-                    if (!id || !registry) return
+                    if (!event.id || !registry) return
                     
-                    switch(message.event)
+                    switch (message.on)
                     {
                         case 'click':
-                            registry.events.invokeDataEvent(registry.notification)
-                            this.query(id).catch(() => registry.events.invokeCancelEvent(error(Errors.featureTerminated)))
+
+                            registry.events.invokeDataEvent(event)
+                            this.query(event.id).catch(() => 
+                            {
+                                delete this.registry[event.id]
+
+                                registry.events.invokeCancelEvent(error(Errors.featureTerminated))
+                            })
+                            
                             break
                     }
             }
         })
-        worker.onReady(registration => this.registration = registration)
+
+        this.worker = worker
     }
 
     private active: boolean
-    private registration: ServiceWorkerRegistration
-    private readonly registry: Record<string, { events: AppNextDataEvents<Notification>, notification: Notification }>
+    private readonly registry: Record<string, { events: AppNextDataEvents<AppNextNotificationEvent>, notification: Notification }>
+    private readonly worker: AppNextServiceWorker
 
     private query(tag: string) : Promise<Notification>
     {
-        if (!this.registration) return Promise.reject()
-
         return new Promise((resolve, reject) =>
         {
-            this.registration.getNotifications({ tag }).then(notifications =>
+            const error = this.worker.invoke(registration =>
             {
-                const notification = notifications[0]
+                registration.getNotifications({ tag }).then(notifications =>
+                {
+                    const notification = notifications[0]
+    
+                    notification ? resolve(notification) : reject()
+    
+                }).catch(reject)
+            })
 
-                notification ? resolve(notification) : reject()
-
-            }).catch(reject)
+            if (error) reject(error)
         })
     }
 
-    public create(title: string, listeners: AppNextDataEventsListeners<Notification>, options?: NotificationOptions) : void
+    public create(title: string, listeners: AppNextDataEventsListeners<AppNextNotificationEvent>, options?: NotificationOptions) : void
     {
-        if (!this.active || !this.registration) return
+        if (!this.active) return
 
         const events = AppNextDataEvents.from(listeners),
               id = 'app-next-' + new Date().getTime().toString(36)
 
         events.invokePendingEvent()
 
-        this.registration.showNotification(title, Object.assign(options, { tag: id }))
+        const error = this.worker.invoke(registration =>
+        {
+            registration.showNotification(title, Object.assign(options, { tag: id }))
+        })
+
+        if (error) return this.invokeCancelEvent(error)
 
         this.query(id).then(notification =>
         {
@@ -85,26 +110,18 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
             const handlePermission = (permission: NotificationPermission) => 
             {
                 if (handling) return; handling = true
-                
-                const id = setInterval(() => 
+
+                this.active = true
+
+                if (!this.permission.handle(permission))
                 {
-                    if (this.registration)
-                    {
-                        clearInterval(id); this.active = true
+                    this.active = false
+                }
 
-                        if (!this.permission.handle(permission))
-                        {
-                            this.active = false
-                        }
-                        
-                        resolve()
-                    }
-
-                }, 100)
+                resolve()
             }
 
-            var handling = false
-            const handler = Notification.requestPermission(handlePermission)
+            var handling = false; const handler = Notification.requestPermission(handlePermission)
 
             if (handler instanceof Promise) 
             {

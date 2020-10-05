@@ -1,6 +1,6 @@
 import { AppNextSensor } from './base/sensor'
 
-export class AppNextAccelerometer extends AppNextSensor<Accelerometer>
+export class AppNextAccelerometerSensor extends AppNextSensor<Accelerometer>
 {
     constructor(options?: AccelerometerSensorOptions)
     {
