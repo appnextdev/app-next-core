@@ -14,7 +14,7 @@ export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> im
     private readonly code : string
     private worker: Worker
 
-    public request()
+    public request() : void
     {
         try
         {
@@ -30,9 +30,20 @@ export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> im
         }
     }
 
-    public post(data: any) : void
+    public post(data: any) : boolean
     {
-        this.worker.postMessage(data)
+        try
+        {
+            this.worker.postMessage(data)
+
+            return true
+        }
+        catch(error)
+        {
+            this.invokeErrorEvent(error)
+
+            return false
+        }
     }
 
     public start() : boolean
@@ -46,7 +57,7 @@ export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> im
 
         try
         {
-            this.worker.onerror = event => this.invokeErrorEvent(event.error)
+            this.worker.onerror = event => this.invokeErrorEvent(new Error(event.message))
 
             this.worker.onmessage = event =>
             {

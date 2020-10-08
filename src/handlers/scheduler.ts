@@ -99,14 +99,25 @@ export class AppNextScheduler extends AppNextBackgroundService
         if (this.register) this.register(task)
     }
 
-    public post(task: AppNextScheduledTask) : void
+    public post(task: AppNextScheduledTask) : boolean
     {
-        const key = new Date().getTime().toString(36)
+        try
+        {
+            const key = new Date().getTime().toString(36)
 
-        this.tasks[key] = task
+            this.tasks[key] = task
+    
+            super.post({ key, when: task.when })
+    
+            this.invokeRegisterEvent(task)
+    
+            return true
+        }
+        catch(error)
+        {
+            this.invokeErrorEvent(error)
 
-        super.post({ key, when: task.when })
-
-        this.invokeRegisterEvent(task)
+            return false
+        }
     }
 }

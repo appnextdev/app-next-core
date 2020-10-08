@@ -7,6 +7,8 @@ import { AppNextNotificationsProvider } from './providers/notifications'
 import { AppNextServiceWorker } from './handlers/worker'
 import { AppNextDataEvents, AppNextDataEventsListeners } from './handlers/data'
 import { error, Errors } from './handlers/error'
+import { AppNextPubSubManager } from './handlers/pubsub'
+import { AppNextBackgroundService } from './handlers/background'
 
 interface AppNextCoreProviders
 {
@@ -57,25 +59,35 @@ export class AppNextCore extends AppNextDataEvents<AppNextCore> implements Cycle
             magnetometer: null
         }
 
+        this.pubsub = new AppNextPubSubManager(message => this.service.post(message))
+        this.service = new AppNextBackgroundService('onmessage = event => postMessage(event.data)')
+        this.service.onError = error => this.invokeErrorEvent(error)
+        this.service.onData = event => this.pubsub.invoke(event)
         this.worker = new AppNextServiceWorker()
-        this.worker.onError = this.onError
     }
 
-    private worker: AppNextServiceWorker
+    private readonly pubsub: AppNextPubSubManager
+    private readonly service: AppNextBackgroundService
+    private readonly worker: AppNextServiceWorker
 
     public readonly providers: AppNextCoreProviders
     public readonly sensors: AppNextCoreSensors
 
     public config(value: any) { AppNextCore.config = value || {} }
 
-    public publish(data: any) : boolean
+    public publish(message: any, topic?: string) : boolean
     {
-        return this.worker.message(data)
+        if (!(message instanceof Object)) message = { message }
+
+        return this.pubsub.publish(Object.assign(message, { topic }))
     }
 
-    public subscribe(listener: (event: MessageEvent) => void) : void
+    public subscribe(listener: (event: MessageEvent) => void, topic?: string) : void
     {
-        this.worker.onMessage(listener)
+        this.pubsub.subscribe((event: MessageEvent) =>
+        {
+            if (topic == event.data.topic) listener(event)
+        })
     }
 
     public start() : Promise<void>
@@ -86,6 +98,8 @@ export class AppNextCore extends AppNextDataEvents<AppNextCore> implements Cycle
             {
                 notifications: null as AppNextNotificationsProvider
             }
+
+            this.worker.onError = error => this.invokeErrorEvent(error)
 
             this.worker.onReady = () => 
             {
@@ -107,8 +121,13 @@ export class AppNextCore extends AppNextDataEvents<AppNextCore> implements Cycle
 
             return this.worker.start().then(() => 
             {
-                this.invokeReadyEvent()
-                this.invokeDataEvent(this)
+                this.service.onReady = () =>
+                {
+                    this.invokeReadyEvent()
+                    this.invokeDataEvent(this)
+                }
+
+                this.service.start()
                 
             }).catch(error => this.invokeCancelEvent(error))
         }
@@ -124,9 +143,12 @@ export class AppNextCore extends AppNextDataEvents<AppNextCore> implements Cycle
     {
         const tasks =
         [
+            this.service.stop(),
             this.worker.stop()
         ]
 
-        return Promise.all(tasks).then(() => this.invokeCancelEvent(error(Errors.featureTerminated)))
+        return Promise.all(tasks)
+                      .then(() => this.invokeCancelEvent(error(Errors.featureTerminated)))
+                      .catch(error => this.invokeErrorEvent(error))
     }
 }

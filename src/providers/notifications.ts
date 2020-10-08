@@ -18,7 +18,7 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
         this.active = false
         this.registry = {}
 
-        worker.onMessage(event =>
+        worker.subscribe(event =>
         {
             const message = event.data
 
@@ -26,7 +26,13 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
             {
                 case 'notification':
 
-                    const event = message.event as AppNextNotificationEvent
+                    const close = () =>
+                          {
+                            delete this.registry[event.id]
+
+                            registry.events.invokeCancelEvent(error(Errors.featureTerminated))
+                          },
+                          event = message.event as AppNextNotificationEvent
 
                     if (!event) return
 
@@ -37,15 +43,12 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
                     switch (message.on)
                     {
                         case 'click':
-
                             registry.events.invokeDataEvent(event)
-                            this.query(event.id).catch(() => 
-                            {
-                                delete this.registry[event.id]
+                            this.query(event.id).catch(() => close())
+                            break
 
-                                registry.events.invokeCancelEvent(error(Errors.featureTerminated))
-                            })
-                            
+                        case 'close':
+                            close()
                             break
                     }
             }

@@ -1,5 +1,6 @@
 import { AppNextDataEvents } from './data'
 import { error, Errors } from './error'
+import { AppNextPubSubManager } from './pubsub'
 
 export class AppNextServiceWorker extends AppNextDataEvents<ServiceWorkerRegistration> implements Cycleable
 {
@@ -7,18 +8,11 @@ export class AppNextServiceWorker extends AppNextDataEvents<ServiceWorkerRegistr
     {
         super()
 
-        this.listeners =
-        {
-            message: []
-        }
+        this.pubsub = new AppNextPubSubManager(data => this.message(data))
     }
 
-    private readonly listeners: 
-    {
-        message: Array<(event: MessageEvent) => void>
-    }
 
-    private channel: BroadcastChannel
+    private pubsub: AppNextPubSubManager
     private registration: ServiceWorkerRegistration
 
     public invoke(handler: (registration: ServiceWorkerRegistration) => void) : Error
@@ -39,9 +33,15 @@ export class AppNextServiceWorker extends AppNextDataEvents<ServiceWorkerRegistr
     {
         try
         {
-            this.channel.postMessage(data)
+            if (navigator.serviceWorker.controller)
+            {
+                navigator.serviceWorker.controller.postMessage(data)
 
-            return true
+                return true
+            }
+
+            return false
+            
         }
         catch(error)
         {
@@ -51,39 +51,22 @@ export class AppNextServiceWorker extends AppNextDataEvents<ServiceWorkerRegistr
         }
     }
 
-    public onMessage(listener: (event: MessageEvent) => void) : void
+    public subscribe(listener: (event: MessageEvent) => void) : void
     {
-        this.listeners.message.push(listener)
+        this.pubsub.subscribe(listener)
     }
 
     public start() : Promise<void>
     {
         if (this.registration) return Promise.reject()
         
-        const invoke = (listeners: Array<Function>, handler: any) : void =>
-        {
-            listeners.forEach(listener =>
-            {
-                try
-                {
-                    listener.call({}, handler)
-                }
-                catch(error)
-                {
-                    this.invokeErrorEvent(error)
-                }
-            })
-        }
-
         this.invokePendingEvent()
 
         try
         {
-            this.channel = new BroadcastChannel('app-next-channel')
-            this.channel.addEventListener('message', event => invoke(this.listeners.message, event))
-
+            navigator.serviceWorker.onmessage = event => this.pubsub.invoke(event)
             navigator.serviceWorker.register('/app-next-service-worker.js')
-            
+
             return navigator.serviceWorker.ready.then(registration => 
             {
                 this.invokeReadyEvent()
@@ -112,18 +95,9 @@ export class AppNextServiceWorker extends AppNextDataEvents<ServiceWorkerRegistr
         {
             if (success)
             {
-                try
-                {
-                    this.channel.close()
-
-                    this.invokeCancelEvent(error(Errors.featureTerminated))
+                this.invokeCancelEvent(error(Errors.featureTerminated))
     
-                    return Promise.resolve()
-                }
-                catch(error)
-                {
-                    return handleError(error)
-                }
+                return Promise.resolve()
             }
 
             return handleError()
