@@ -92,51 +92,42 @@ export class AppNextCore extends AppNextDataEvents<AppNextCore> implements Cycle
 
     public start() : Promise<void>
     {
-        try
+        const handle =
         {
-            const handle =
-            {
-                notifications: null as AppNextNotificationsProvider
-            }
+            notifications: null as AppNextNotificationsProvider
+        }
 
-            this.worker.onError = error => this.invokeErrorEvent(error)
+        this.service.onCancel = error => this.invokeCancelEvent(error)
+        this.service.onError = error => this.invokeErrorEvent(error)
+        this.worker.onCancel = error => this.invokeCancelEvent(error)
+        this.worker.onError = error => this.invokeErrorEvent(error)
 
-            this.worker.onReady = () => 
+        this.service.onReady = () =>
+        {
+            this.invokeReadyEvent()
+            this.invokeDataEvent(this)
+        }
+
+        this.worker.onReady = () => 
+        {
+            this.providers.geolocation = (options?: PositionOptions) => new AppNextGeoLocationProvider(options)
+            this.providers.notifications = () => 
             {
-                this.providers.geolocation = (options?: PositionOptions) => new AppNextGeoLocationProvider(options)
-                this.providers.notifications = () => 
+                if (!handle.notifications)
                 {
-                    if (!handle.notifications)
-                    {
-                        handle.notifications = new AppNextNotificationsProvider(this.worker)
-                    }
-
-                    return handle.notifications
-                }
-                this.sensors.accelerometer = (options?: AccelerometerSensorOptions) => new AppNextAccelerometerSensor(options)
-                this.sensors.gyroscope = (options?: SensorOptions) => new AppNextGyroscopeSensor(options)
-                this.sensors.light = (options?: SensorOptions) => new AppNextLightSensor(options)
-                this.sensors.magnetometer = (options?: SensorOptions) => new AppNextMagnetometerSensor(options)
-            }
-
-            return this.worker.start().then(() => 
-            {
-                this.service.onReady = () =>
-                {
-                    this.invokeReadyEvent()
-                    this.invokeDataEvent(this)
+                    handle.notifications = new AppNextNotificationsProvider(this.worker)
                 }
 
-                this.service.start()
-                
-            }).catch(error => this.invokeCancelEvent(error))
+                return handle.notifications
+            }
+            this.sensors.accelerometer = (options?: AccelerometerSensorOptions) => new AppNextAccelerometerSensor(options)
+            this.sensors.gyroscope = (options?: SensorOptions) => new AppNextGyroscopeSensor(options)
+            this.sensors.light = (options?: SensorOptions) => new AppNextLightSensor(options)
+            this.sensors.magnetometer = (options?: SensorOptions) => new AppNextMagnetometerSensor(options)
         }
-        catch(error)
-        {
-            this.invokeCancelEvent(error)
 
-            return Promise.reject()
-        }
+        return this.worker.start().then(() => { this.service.start() })
+                                  .catch(error => this.invokeCancelEvent(error))
     }
 
     public stop(): Promise<void>
