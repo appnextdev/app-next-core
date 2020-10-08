@@ -69,9 +69,15 @@ export class AppNextServiceWorker extends AppNextDataEvents<ServiceWorkerRegistr
 
             return navigator.serviceWorker.ready.then(registration => 
             {
+                this.registration = registration
+
+                return registration.update()
+
+            }).then(() =>
+            {
                 this.invokeReadyEvent()
-                this.invokeDataEvent(this.registration = registration)
-    
+                this.invokeDataEvent(this.registration)
+
             }).catch(error => this.invokeCancelEvent(error))
         }
         catch(error)
