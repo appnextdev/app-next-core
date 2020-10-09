@@ -119,9 +119,9 @@ export class AppNextSetup
             return this.scheduler
         },
 
-        service: (name: string, script: string) : AppNextBackgroundService =>
+        service: (path: string) : AppNextBackgroundService =>
         {
-            return this.services.register(name, new AppNextBackgroundService(script))
+            return this.services.register(path, new AppNextBackgroundService(path))
         }
     }
 

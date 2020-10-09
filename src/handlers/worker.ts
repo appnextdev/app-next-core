@@ -8,7 +8,7 @@ export class AppNextServiceWorker extends AppNextDataEvents<ServiceWorkerRegistr
     {
         super()
 
-        this.pubsub = new AppNextPubSubManager(data => this.message(data))
+        this.pubsub = new AppNextPubSubManager()
     }
 
 
@@ -26,28 +26,6 @@ export class AppNextServiceWorker extends AppNextDataEvents<ServiceWorkerRegistr
             this.invokeErrorEvent(error)
 
             return error
-        }
-    }
-
-    public message(data: any) : boolean
-    {
-        try
-        {
-            if (navigator.serviceWorker.controller)
-            {
-                navigator.serviceWorker.controller.postMessage(data)
-
-                return true
-            }
-
-            return false
-            
-        }
-        catch(error)
-        {
-            this.invokeErrorEvent(error)
-
-            return false
         }
     }
 

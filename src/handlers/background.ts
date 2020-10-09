@@ -4,14 +4,17 @@ import { AppNextWatcher } from './watch'
 
 export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> implements AppNextWatcher, Cycleable
 {
-    constructor(script: string)
+    constructor(path: string)
     {
         super()
 
-        this.code = 'data:application/x-javascript;base64,' + btoa(script)
+        if (!path.startsWith('data:application/'))
+        {
+            this.path = path
+        }
     }
 
-    private readonly code : string
+    private readonly path : string
     private worker: Worker
 
     public request() : void
@@ -20,7 +23,7 @@ export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> im
         {
             if (this.worker) return
 
-            this.worker = new Worker(this.code)
+            this.worker = new Worker(this.path)
 
             this.invokePendingEvent()
         }
@@ -57,7 +60,7 @@ export class AppNextBackgroundService extends AppNextDataEvents<MessageEvent> im
 
         try
         {
-            this.worker.onerror = event => this.invokeErrorEvent(new Error(event.message))
+            this.worker.onerror = event => this.invokeErrorEvent(event.error || new Error(event.message || event.filename))
 
             this.worker.onmessage = event =>
             {

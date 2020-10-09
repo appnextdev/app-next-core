@@ -60,9 +60,21 @@ export class AppNextCore extends AppNextDataEvents<AppNextCore> implements Cycle
         }
 
         this.pubsub = new AppNextPubSubManager(message => this.service.post(message))
-        this.service = new AppNextBackgroundService('onmessage = event => postMessage(event.data)')
+        this.service = new AppNextBackgroundService('/app-next-pubsub.js')
         this.service.onError = error => this.invokeErrorEvent(error)
-        this.service.onData = event => this.pubsub.invoke(event)
+        this.service.onData = event => 
+        {
+            const message = event.data
+
+            if (message.error) 
+            {
+                this.invokeErrorEvent(event.data.error)
+            }
+            else
+            {
+                this.pubsub.invoke(event)
+            }
+        }
         this.worker = new AppNextServiceWorker()
     }
 
@@ -79,7 +91,7 @@ export class AppNextCore extends AppNextDataEvents<AppNextCore> implements Cycle
     {
         if (!(message instanceof Object)) message = { message }
 
-        return this.pubsub.publish(Object.assign(message, { topic }))
+        return this.service.post(Object.assign(message, { topic }))
     }
 
     public subscribe(listener: (event: MessageEvent) => void, topic?: string) : void
