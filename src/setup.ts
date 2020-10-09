@@ -109,11 +109,11 @@ export class AppNextSetup
             return new AppNextReflector(events)
         },
 
-        scheduler: (seconds?: number) : AppNextScheduler =>
+        scheduler: () : AppNextScheduler =>
         {
             if (!this.scheduler)
             {
-                this.scheduler = new AppNextScheduler(seconds)
+                this.scheduler = new AppNextScheduler()
             }
 
             return this.scheduler

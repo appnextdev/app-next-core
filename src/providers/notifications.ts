@@ -106,40 +106,35 @@ export class AppNextNotificationsProvider extends AppNextWatch<Notification>
 
     public request() : Promise<void>
     {
-        return new Promise((resolve, reject) =>
+        if (!('Notification' in window)) 
         {
-            const handlePermission = (permission: NotificationPermission) => 
+            return Promise.reject(error(Errors.notificationNotSupported))
+        }
+
+        if (this.active) return Promise.resolve()
+
+        return Promise.resolve(Notification.requestPermission()).then((permission: NotificationPermission) =>
+        {
+            this.active = true
+
+            if (!this.permission.handle(permission))
             {
-                if (handling) return; handling = true
+                this.active = false
 
-                this.active = true
-
-                if (!this.permission.handle(permission))
-                {
-                    this.active = false
-                }
-
-                resolve()
+                return Promise.reject(error(Errors.permissionDenied))
             }
 
-            var handling = false; const handler = Notification.requestPermission(handlePermission)
+        }).catch(error =>
+        {
+            this.active = false
 
-            if (handler instanceof Promise) 
-            {
-                handler.then(handlePermission).catch(error =>
-                {
-                    this.active = false
-                    this.invokeErrorEvent(error)
-
-                    reject(error)
-                })
-            }
+            return Promise.reject(error)
         })
     }
 
     public start() : Promise<void>
     {
-        return this.active ? Promise.reject() : this.request()
+        return this.request().catch(error => this.invokeCancelEvent(error))
     }
 
     public stop() : boolean

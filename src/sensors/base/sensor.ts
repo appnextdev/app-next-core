@@ -13,14 +13,12 @@ export abstract class AppNextSensor<T extends Sensor> extends AppNextWatch<T>
     private factory: () => T
     protected handler: T
 
-    public request() : Promise<void>
+    private initiate() : void
     {
-        if (!this.factory) return Promise.reject(error(Errors.invalidFactoryFunction))
-
-        this.invokePendingEvent()
-
-        return super.request().then(() => 
+        if (this.factory)
         {
+            this.invokePendingEvent()
+
             try
             {
                 this.handler = this.factory()
@@ -31,54 +29,54 @@ export abstract class AppNextSensor<T extends Sensor> extends AppNextWatch<T>
                 {
                     case 'SecurityError':
                     case 'ReferenceError':
-                        return this.invokeCancelEvent(error)
+                        this.invokeCancelEvent(error)
+                        break
 
                     default:
                         this.invokeErrorEvent(error)
                 }
             }
-        }).catch(error => this.invokeErrorEvent(error))
-    }
-
-    public start() : Promise<void>
-    {
-        const invoke = () =>
-        {
-            this.handler.start()
-            this.invokeReadyEvent()
-        }
-
-        if (this.handler)
-        {
-            invoke(); return Promise.resolve()
         }
         else
         {
-            return this.request().then(() =>  
-            {
-                if (!this.handler) return 
+            this.invokeErrorEvent( error(Errors.invalidFactoryFunction))
+        }
+    }
 
-                this.handler.onerror = event =>
+    public start() : boolean
+    {
+        if (!this.handler)
+        {
+            this.initiate(); if (!this.handler) return false
+
+            this.handler.onerror = event =>
+            {
+                switch (event.error.name)
                 {
-                    switch (event.error.name)
-                    {
-                        case 'NotAllowedError':
-                        case 'NotReadableError': 
-                            return this.invokeCancelEvent(event.error)
+                    case 'NotAllowedError':
+                    case 'NotReadableError': 
+                        return this.invokeCancelEvent(event.error)
 
-                        default: 
-                            return this.invokeErrorEvent(event.error)
-                    }
+                    default: 
+                        return this.invokeErrorEvent(event.error)
                 }
+            }
 
-                this.handler.onreading = () => this.invokeDataEvent(this.handler)
+            this.handler.onreading = () => this.invokeDataEvent(this.handler)
+        }
 
-                invoke()
-    
-            }).catch(error => 
-            {
-                this.invokeErrorEvent(error)
-            })
+        try
+        {
+            this.handler.start()
+            this.invokeReadyEvent()
+
+            return true
+        }
+        catch(error)
+        {
+            this.invokeCancelEvent(error)
+
+            return false
         }
     }
 

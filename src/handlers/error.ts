@@ -8,6 +8,7 @@ export enum Errors
     invalidFactoryFunction,
     notificationError,
     notificationNotFound,
+    notificationNotSupported,
     permissionDenied
 }
 
@@ -21,6 +22,7 @@ const errors: Record<string, { name: string, message: string }> =
     invalidFactoryFunction: { name: 'invalid factory', message: 'Factory function must provide a valid handler instance' },
     notificationError: { name: 'notification error', message: 'An error raised while handling notification' },
     notificationNotFound: { name: 'notification not found', message: 'Notification not found in service worker registration' },
+    notificationNotSupported: { name: 'notification not supported', message: 'It seems that your browser does not supoort notifications. TRy to upgrade it or use a different browser to resolve' },
     permissionDenied: { name: 'permission denied', message: 'Requested permission denied by user' }
 }
 
